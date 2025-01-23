@@ -1,0 +1,1 @@
+export { default as contractMachineSlot } from "./modules/deploy";

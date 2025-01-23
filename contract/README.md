@@ -1,33 +1,86 @@
-Voici une explication du contrat `SimpleSlotMachine` et comment l'utiliser :
+# MachineSlotWeb3
 
-### Explication du contrat
+// 1. Configuration initiale
+npx hardhat node
+npx hardhat ignition deploy ./ignition/modules/deploy.ts --network localhost
+npx hardhat console --network localhost
+const { formatUnits } = await import('viem')
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS)
+const [account] = await hre.viem.getWalletClients()
 
-Le contrat `SimpleSlotMachine` est un contrat intelligent Solidity qui implémente une machine à sous simple. Voici les principales fonctionnalités et composants du contrat :
+// 2. Lecture des informations de base
+// Obtenir le montant du pari
+const betAmount = await slot.read.betAmount()
+console.log("Montant du pari:", formatUnits(betAmount, 18), "ETH")
 
-- **Propriétaire** : L'adresse du propriétaire du contrat est stockée dans la variable `owner`.
-- **Montant du pari** : Le montant du pari par défaut est de 0.001 ETH, stocké dans `betAmount`.
-- **Nombre de symboles** : Le nombre de symboles différents sur les rouleaux est de 6, stocké dans `numberOfSymbols`.
-- **Multiplicateurs de gains** : Les multiplicateurs pour trois symboles identiques et deux symboles identiques sont respectivement `threeMatchMultiplier` (5) et `twoMatchMultiplier` (2).
-- **Mappings** : `totalWinnings` et `totalBets` sont des mappings qui suivent les gains et les paris totaux de chaque joueur.
-- **Événement** : L'événement `Spin` est émis à chaque fois qu'un joueur fait tourner la machine à sous.
+// Obtenir le solde du contrat
+const balance = await slot.read.getBalance()
+console.log("Solde du contrat:", formatUnits(balance, 18), "ETH")
 
-### Fonctions principales
+// Obtenir le propriétaire
+const owner = await slot.read.owner()
+console.log("Propriétaire:", owner)
 
-- **setBetAmount** : Permet de définir le montant du pari.
-- **spin** : Permet à un joueur de faire tourner la machine à sous en envoyant le montant du pari. La fonction génère un résultat aléatoire, calcule les gains et transfère les gains au joueur si applicable.
-- **getPlayerStats** : Retourne les statistiques d'un joueur (total des paris, total des gains, résultat net).
-- **getBalance** : Retourne le solde du contrat.
-- **addFunds** : Permet d'ajouter des fonds au contrat.
-- **withdrawFunds** : Permet au propriétaire de retirer des fonds du contrat.
+// Obtenir les probabilités de gain
+const odds = await slot.read.odds()
+console.log("Probabilités:", odds)
 
-### Utilisation du contrat
+// 3. Actions de jeu
+// Faire un spin
+const spinTx = await slot.write.spin({
+value: betAmount,
+account: account.account
+})
+console.log("Transaction spin:", spinTx)
 
-1. **Déploiement** : Déployez le contrat sur le réseau Ethereum en utilisant un environnement de développement comme Remix ou Truffle sur du Sepolia.
-2. **Définir le montant du pari** : Utilisez la fonction `setBetAmount` pour définir le montant du pari si vous souhaitez un montant différent de 0.001 ETH.
-3. **Ajouter des fonds** : Le propriétaire peut ajouter des fonds au contrat en utilisant la fonction `addFunds`.
-4. **Faire tourner la machine à sous** : Les joueurs peuvent appeler la fonction `spin` en envoyant le montant du pari. Le résultat de la rotation et les gains éventuels seront déterminés et transférés automatiquement.
-5. **Vérifier les statistiques** : Les joueurs peuvent vérifier leurs statistiques en appelant la fonction `getPlayerStats`.
-6. **Retirer des fonds** : Le propriétaire peut retirer des fonds du contrat en utilisant la fonction `withdrawFunds`.
+// 4. Actions du propriétaire (uniquement si vous êtes le owner)
+// Retirer les fonds
+const withdrawTx = await slot.write.withdraw({
+account: account.account
+})
+console.log("Transaction retrait:", withdrawTx)
 
-## Attention
-Assurez-vous d'avoir suffisamment de fonds dans le contrat pour couvrir les gains potentiels avant de permettre aux joueurs de faire tourner la machine à sous.
+// Modifier le montant du pari
+const newBetAmount = 100000000000000000n // 0.1 ETH
+const setBetAmountTx = await slot.write.setBetAmount(newBetAmount, {
+account: account.account
+})
+console.log("Transaction modification pari:", setBetAmountTx)
+
+// Modifier les probabilités
+const newOdds = 50 // 50%
+const setOddsTx = await slot.write.setOdds(newOdds, {
+account: account.account
+})
+console.log("Transaction modification odds:", setOddsTx)
+
+// 5. Lire les événements
+// Obtenir tous les spins
+const allSpins = await slot.getEvents.Spin()
+console.log("Tous les spins:", allSpins)
+
+// Obtenir le dernier spin
+const lastSpin = allSpins[allSpins.length - 1]
+if (lastSpin) {
+console.log("Dernier spin:", {
+symbols: lastSpin.args.symbols,
+payout: formatUnits(lastSpin.args.payout, 18),
+won: lastSpin.args.won
+})
+}
+
+// 6. Vérifier les transactions
+const publicClient = await hre.viem.getPublicClient()
+const receipt = await publicClient.getTransactionReceipt({
+hash: spinTx // ou n'importe quel autre hash de transaction
+})
+console.log("Reçu de transaction:", receipt)
+
+// 7. Déposer des fonds dans le contrat (en tant que owner)
+const depositAmount = 1000000000000000000n // 1 ETH
+const depositTx = await slot.write.deposit({
+value: depositAmount,
+account: account.account
+})
+console.log("Transaction dépôt:", depositTx)
