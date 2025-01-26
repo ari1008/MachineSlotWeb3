@@ -248,6 +248,7 @@ function Web3App() {
     const [gameInfo, setGameInfo] = useState(null);
     const [networkError, setNetworkError] = useState('');
 
+
     const updateStatus = (message) => {
         console.log("Status Update:", message);
         setStatus(message);
@@ -389,6 +390,7 @@ function Web3App() {
 
         try {
             setIsSpinning(true);
+
             updateStatus("Preparing spin...");
 
             const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -456,6 +458,7 @@ function Web3App() {
             setIsSpinning(false);
         }
     };
+
 
     const checkNetwork = async () => {
         if (!window.ethereum) return false;
@@ -567,6 +570,31 @@ function Web3App() {
                     </div>
                 )}
 
+                {lastResult && (
+                    <div className="mb-4 p-4 bg-green-50 rounded-lg flex flex-col items-center text-center">
+                        <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
+                        <div className="flex items-center gap-4">
+                            {lastResult.result.map((number, index) => (
+                                <div
+                                    key={index}
+                                    className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
+                                        isSpinning
+                                            ? 'bg-blue-300' // Temporary circle color while spinning
+                                            : 'bg-green-500 text-white' // Final color when result received
+                                    }`}
+                                >
+                                    {/* Numbers hidden during spinning */}
+                                    {!isSpinning && number}
+                                </div>
+                            ))}
+                        </div>
+                        <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
+                        <p className="text-lg">Win Amount: {lastResult.winAmount} ETH</p>
+                    </div>
+                )}
+
+
+
                 {gameInfo && (
                     <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                         <h3 className="font-semibold mb-2">Game Info:</h3>
@@ -577,14 +605,7 @@ function Web3App() {
                     </div>
                 )}
 
-                {lastResult && (
-                    <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-semibold mb-2">Last Result:</h3>
-                        <p>Symbols: {lastResult.result.join(' - ')}</p>
-                        <p>Outcome: {lastResult.outcome}</p>
-                        <p>Win Amount: {lastResult.winAmount} ETH</p>
-                    </div>
-                )}
+
 
                 <div className="flex justify-center mb-6">
                     {!isConnected ? (
