@@ -387,6 +387,7 @@ function Web3App() {
             updateStatus("Contract not initialized");
             return;
         }
+        setLastResult(null);
 
         try {
             setIsSpinning(true);
@@ -399,6 +400,8 @@ function Web3App() {
             // Vérifier le solde
             const currentBalance = await provider.getBalance(account);
             const betAmountWei = ethers.utils.parseEther(betAmount);
+            // Fetch the current nonce
+            const nonce = await provider.getTransactionCount(account, 'latest');
 
             if (currentBalance.lt(betAmountWei)) {
                 throw new Error("Insufficient balance for bet");
@@ -409,6 +412,7 @@ function Web3App() {
                 from: account,
                 value: betAmountWei,
                 gasLimit: ethers.utils.hexlify(1000000), // Gas limit plus élevé pour Hardhat
+                nonce: nonce
             };
 
             console.log("Sending transaction with params:", txParams);
@@ -570,28 +574,30 @@ function Web3App() {
                     </div>
                 )}
 
-                {lastResult && (
-                    <div className="mb-4 p-4 bg-green-50 rounded-lg flex flex-col items-center text-center">
-                        <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
-                        <div className="flex items-center gap-4">
-                            {lastResult.result.map((number, index) => (
-                                <div
-                                    key={index}
-                                    className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
-                                        isSpinning
-                                            ? 'bg-blue-300' // Temporary circle color while spinning
-                                            : 'bg-green-500 text-white' // Final color when result received
-                                    }`}
-                                >
-                                    {/* Numbers hidden during spinning */}
-                                    {!isSpinning && number}
-                                </div>
-                            ))}
-                        </div>
-                        <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
-                        <p className="text-lg">Win Amount: {lastResult.winAmount} ETH</p>
+                <div className="mb-4 p-4 bg-green-50 rounded-lg flex flex-col items-center text-center">
+                    <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
+                    <div className="flex items-center gap-4">
+                        {(lastResult ? lastResult.result : [null, null, null]).map((number, index) => (
+                            <div
+                                key={index}
+                                className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
+                                    isSpinning
+                                        ? 'bg-blue-300' // Temporary circle color while spinning
+                                        : 'bg-green-500 text-white' // Final color when result received
+                                }`}
+                            >
+                                {/* Numbers hidden during spinning */}
+                                {!isSpinning && number}
+                            </div>
+                        ))}
                     </div>
-                )}
+                    {lastResult && (
+                        <>
+                            <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
+                            <p className="text-lg">Win Amount: {lastResult.winAmount} ETH</p>
+                        </>
+                    )}
+                </div>
 
 
 
