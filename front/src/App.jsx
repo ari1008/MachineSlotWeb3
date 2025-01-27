@@ -579,23 +579,32 @@ function Web3App() {
                         <div className="p-4 bg-green-50 rounded-lg flex flex-col items-center text-center h-full">
                             <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
                             <div className="flex items-center gap-10">
-                                {(lastResult ? lastResult.result : [null, null, null]).map((number, index) => (
-                                    <div
-                                        key={index}
-                                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
-                                            isSpinning
-                                                ? 'bg-blue-300' // Temporary circle color while spinning
-                                                : 'bg-green-500 text-white' // Final color when result received
-                                        }`}
-                                    >
-                                        {!isSpinning && number}
-                                    </div>
-                                ))}
+                                {(lastResult ? lastResult.result : [null, null, null]).map((number, index, array) => {
+                                    // Check if the current number matches any other number in the result
+                                    const isMatching = array.filter((n) => n === number).length > 1;
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
+                                                isSpinning
+                                                    ? 'bg-blue-300' // Temporary circle color while spinning
+                                                    : isMatching
+                                                        ? 'bg-green-500 text-white' // Matching numbers are green
+                                                        : 'bg-green-200 text-green-900' // Non-matching numbers are light green
+                                            }`}
+                                        >
+                                            {!isSpinning && number}
+                                        </div>
+                                    );
+                                })}
                             </div>
                             {lastResult && (
                                 <>
                                     <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
-                                    <p className="text-lg">Amount Won: {lastResult.winAmount} ETH</p>
+                                    <p className="text-lg">
+                                        Amount Won: <span className="font-bold">{lastResult.winAmount} ETH </span>
+                                    </p>
                                 </>
                             )}
                         </div>
