@@ -557,7 +557,7 @@ function Web3App() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+            <div className="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
                 <h1 className="text-2xl font-bold text-center mb-6">
                     Slot Machine Web3
                 </h1>
@@ -574,43 +574,57 @@ function Web3App() {
                     </div>
                 )}
 
-                <div className="mb-4 p-4 bg-green-50 rounded-lg flex flex-col items-center text-center">
-                    <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
-                    <div className="flex items-center gap-4">
-                        {(lastResult ? lastResult.result : [null, null, null]).map((number, index) => (
-                            <div
-                                key={index}
-                                className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
-                                    isSpinning
-                                        ? 'bg-blue-300' // Temporary circle color while spinning
-                                        : 'bg-green-500 text-white' // Final color when result received
-                                }`}
-                            >
-                                {/* Numbers hidden during spinning */}
-                                {!isSpinning && number}
+                <div className="mb-4 p-4 bg-white rounded-lg flex justify-between">
+                    <div className="flex-1 mr-4">
+                        <div className="p-4 bg-green-50 rounded-lg flex flex-col items-center text-center h-full">
+                            <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
+                            <div className="flex items-center gap-10">
+                                {(lastResult ? lastResult.result : [null, null, null]).map((number, index) => (
+                                    <div
+                                        key={index}
+                                        className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
+                                            isSpinning
+                                                ? 'bg-blue-300' // Temporary circle color while spinning
+                                                : 'bg-green-500 text-white' // Final color when result received
+                                        }`}
+                                    >
+                                        {!isSpinning && number}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                            {lastResult && (
+                                <>
+                                    <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
+                                    <p className="text-lg">Amount Won: {lastResult.winAmount} ETH</p>
+                                </>
+                            )}
+                        </div>
                     </div>
-                    {lastResult && (
-                        <>
-                            <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
-                            <p className="text-lg">Win Amount: {lastResult.winAmount} ETH</p>
-                        </>
-                    )}
+                    <div className="flex-1 ml-4">
+                        <div className="p-4 bg-blue-50 rounded-lg h-full flex flex-col items-center ">
+                            <h3 className="font-semibold mb-4 text-lg">Game Info:</h3>
+                            {gameInfo && (
+                                <div className="text-sm">
+                                    <p className="font-semibold">Number&nbsp;of&nbsp;Symbols:</p>
+                                    <p className="text-xl">{gameInfo.numberOfSymbols}</p>
+                                    <p className="font-semibold">Two&nbsp;Match&nbsp;Multiplier:</p>
+                                    <p className="text-xl">{gameInfo.twoMatchMultiplier}x</p>
+                                    <p className="font-semibold">Three&nbsp;Match&nbsp;Multiplier:</p>
+                                    <p className="text-xl">{gameInfo.threeMatchMultiplier}x</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
 
-
                 {gameInfo && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                        <h3 className="font-semibold mb-2">Game Info:</h3>
-                        <p>Bet Amount: {gameInfo.betAmount} ETH</p>
-                        <p>Number of Symbols: {gameInfo.numberOfSymbols}</p>
-                        <p>Two Match Multiplier: {gameInfo.twoMatchMultiplier}x</p>
-                        <p>Three Match Multiplier: {gameInfo.threeMatchMultiplier}x</p>
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg text-center font-semibold">
+                        <p>{gameInfo.betAmount} ETH</p>
+                        <p>Bet Amount: </p>
+
                     </div>
                 )}
-
 
 
                 <div className="flex justify-center mb-6">
@@ -644,7 +658,7 @@ function Web3App() {
                 {isConnected && (
                     <div className="space-y-4">
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <h2 className="text-lg font-semibold mb-2">Play</h2>
+                            <h2 className="text-lg font-semibold mb-2 text-center">Play</h2>
                             <button
                                 onClick={handleSpin}
                                 disabled={isSpinning}
