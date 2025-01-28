@@ -7,6 +7,18 @@ contract SlotMachine {
     uint8 public numberOfSymbols;
     uint256 public threeMatchMultiplier;
     uint256 public twoMatchMultiplier;
+    uint256 public referralBonus = 5;
+    mapping(address => address) public referrers;
+    mapping(address => uint256) public referralEarnings;
+    mapping(address => address[]) public referrals;
+
+    mapping(address => uint256) public playerBankroll;
+
+    event ReferralBonus(
+        address indexed referrer,
+        address indexed player,
+        uint256 bonus
+    );
 
     mapping(address => uint256) public totalWinnings;
     mapping(address => uint256) public totalBets;
@@ -35,32 +47,6 @@ contract SlotMachine {
 
     function setBetAmount(uint256 _betAmount) public {
         betAmount = _betAmount;
-    }
-
-    function spin() public payable {
-        require(msg.value == betAmount, "Incorrect bet amount");
-        require(address(this).balance >= msg.value * threeMatchMultiplier, "Not enough funds in contract");
-
-        totalBets[msg.sender] += msg.value;
-
-        uint8[3] memory result = generateRandomResult();
-        uint256 winAmount = calculateWin(msg.value, result);
-        string memory outcome;
-
-        if (_isThreeMatch(result)) {
-            outcome = "JACKPOT! Three matching symbols!";
-        } else if (_isTwoMatch(result)) {
-            outcome = "Winner! Two matching symbols!";
-        } else {
-            outcome = "No match. Try again!";
-        }
-
-        if (winAmount > 0) {
-            payable(msg.sender).transfer(winAmount);
-            totalWinnings[msg.sender] += winAmount;
-        }
-
-        emit Spin(msg.sender, msg.value, result, winAmount, outcome);
     }
 
     function _isThreeMatch(uint8[3] memory result) private pure returns (bool) {
@@ -111,6 +97,73 @@ contract SlotMachine {
     function addFunds() public payable {
 
     }
+
+    function registerReferral(address referrer) public {
+        require(referrer != msg.sender, "Cannot refer yourself");
+        require(referrers[msg.sender] == address(0), "Already referred");
+        require(referrer != address(0), "Invalid referrer address");
+
+        referrers[msg.sender] = referrer;
+        referrals[referrer].push(msg.sender);
+    }
+
+    function getReferralCount(address referrer) public view returns (uint256) {
+        return referrals[referrer].length;
+    }
+
+    function depositBankroll() public payable {
+        playerBankroll[msg.sender] += msg.value;
+    }
+
+    function spin() public payable {
+        require(msg.value == betAmount, "Incorrect bet amount");
+        require(address(this).balance >= msg.value * threeMatchMultiplier, "Not enough funds in contract");
+
+        totalBets[msg.sender] += msg.value;
+
+        uint8[3] memory result = generateRandomResult();
+        uint256 winAmount = calculateWin(msg.value, result);
+        string memory outcome;
+
+        address referrer = referrers[msg.sender];
+        if (referrer != address(0)) {
+            uint256 referralAmount = (msg.value * referralBonus) / 100;
+            referralEarnings[referrer] += referralAmount;
+            payable(referrer).transfer(referralAmount);
+            emit ReferralBonus(referrer, msg.sender, referralAmount);
+        }
+
+        if (_isThreeMatch(result)) {
+            outcome = "JACKPOT! Three matching symbols!";
+        } else if (_isTwoMatch(result)) {
+            outcome = "Winner! Two matching symbols!";
+        } else {
+            outcome = "No match. Try again!";
+        }
+
+        if (winAmount > 0) {
+            payable(msg.sender).transfer(winAmount);
+            totalWinnings[msg.sender] += winAmount;
+        }
+
+        emit Spin(msg.sender, msg.value, result, winAmount, outcome);
+    }
+
+    function calculateDynamicBetAmount(address player) public view returns (uint256) {
+        uint256 bankroll = playerBankroll[player];
+        if (bankroll == 0) return betAmount;
+
+        uint256 suggestedBet = bankroll / 100;
+
+        if (suggestedBet < betAmount) {
+            return betAmount;
+        } else if (suggestedBet > betAmount * 10) {
+            return betAmount * 10;
+        }
+
+        return suggestedBet;
+    }
+
 
     function withdrawFunds(uint256 amount) public onlyOwner {
         require(amount <= address(this).balance, "Not enough funds");
