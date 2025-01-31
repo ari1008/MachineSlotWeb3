@@ -434,11 +434,13 @@ function Web3App() {
 
         try {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const nonce = await provider.getTransactionCount(account, 'latest');
             const signer = provider.getSigner();
 
             const tx = await contract.depositBankroll({
                 value: ethers.utils.parseEther(amount),
-                from: account
+                from: account,
+                nonce: nonce
             });
 
             console.log("Deposit transaction:", tx);
