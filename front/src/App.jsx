@@ -248,6 +248,7 @@ function Web3App() {
     const [gameInfo, setGameInfo] = useState(null);
     const [networkError, setNetworkError] = useState('');
 
+
     const updateStatus = (message) => {
         console.log("Status Update:", message);
         setStatus(message);
@@ -386,9 +387,11 @@ function Web3App() {
             updateStatus("Contract not initialized");
             return;
         }
+        setLastResult(null);
 
         try {
             setIsSpinning(true);
+
             updateStatus("Preparing spin...");
 
             const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -397,6 +400,8 @@ function Web3App() {
             // Vérifier le solde
             const currentBalance = await provider.getBalance(account);
             const betAmountWei = ethers.utils.parseEther(betAmount);
+            // Fetch the current nonce
+            const nonce = await provider.getTransactionCount(account, 'latest');
 
             if (currentBalance.lt(betAmountWei)) {
                 throw new Error("Insufficient balance for bet");
@@ -407,6 +412,7 @@ function Web3App() {
                 from: account,
                 value: betAmountWei,
                 gasLimit: ethers.utils.hexlify(1000000), // Gas limit plus élevé pour Hardhat
+                nonce: nonce
             };
 
             console.log("Sending transaction with params:", txParams);
@@ -456,6 +462,7 @@ function Web3App() {
             setIsSpinning(false);
         }
     };
+
 
     const checkNetwork = async () => {
         if (!window.ethereum) return false;
@@ -550,7 +557,7 @@ function Web3App() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+            <div className="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
                 <h1 className="text-2xl font-bold text-center mb-6">
                     Slot Machine Web3
                 </h1>
@@ -567,27 +574,116 @@ function Web3App() {
                     </div>
                 )}
 
-                {gameInfo && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                        <h3 className="font-semibold mb-2">Game Info:</h3>
-                        <p>Bet Amount: {gameInfo.betAmount} ETH</p>
-                        <p>Number of Symbols: {gameInfo.numberOfSymbols}</p>
-                        <p>Two Match Multiplier: {gameInfo.twoMatchMultiplier}x</p>
-                        <p>Three Match Multiplier: {gameInfo.threeMatchMultiplier}x</p>
+                {isConnected && (
+                    <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
+                        <p className="mb-2">
+                            <span className="text-green-500">Connected:</span>
+                            {account.slice(0, 6)}...{account.slice(-4)}
+                        </p>
                     </div>
                 )}
 
-                {lastResult && (
-                    <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-semibold mb-2">Last Result:</h3>
-                        <p>Symbols: {lastResult.result.join(' - ')}</p>
-                        <p>Outcome: {lastResult.outcome}</p>
-                        <p>Win Amount: {lastResult.winAmount} ETH</p>
-                    </div>
+                {isConnected && (
+                    <>
+                        <div className="mb-4 p-4 bg-white rounded-lg flex justify-between">
+                            <div className="flex-1 mr-4">
+                                <div className="p-4 bg-green-50 rounded-lg flex flex-col items-center text-center h-full">
+                                    <h3 className="font-semibold mb-4 text-lg">Last Result:</h3>
+                                    <div className="flex items-center gap-10">
+                                        {(lastResult ? lastResult.result : [null, null, null]).map((number, index, array) => {
+                                            const isMatching = array.filter((n) => n === number).length > 1;
+
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`w-16 h-16 flex items-center justify-center text-3xl font-bold rounded-full ${
+                                                        isSpinning
+                                                            ? 'bg-blue-300'
+                                                            : isMatching
+                                                                ? 'bg-green-500 text-white'
+                                                                : 'bg-green-200 text-green-900'
+                                                    }`}
+                                                >
+                                                    {!isSpinning && number}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {lastResult && (
+                                        <>
+                                            <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
+                                            <p className="text-lg">
+                                                Amount Won: <span className="font-bold">{lastResult.winAmount} ETH </span>
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex-1 ml-4">
+                                <div className="p-4 bg-blue-50 rounded-lg h-full flex flex-col items-center ">
+                                    <h3 className="font-semibold mb-4 text-lg">Game Info:</h3>
+                                    {gameInfo && (
+                                        <div className="text-sm">
+                                            <p className="font-semibold">Number&nbsp;of&nbsp;Symbols:</p>
+                                            <p className="text-xl">{gameInfo.numberOfSymbols}</p>
+                                            <p className="font-semibold">Two&nbsp;Match&nbsp;Multiplier:</p>
+                                            <p className="text-xl">{gameInfo.twoMatchMultiplier}x</p>
+                                            <p className="font-semibold">Three&nbsp;Match&nbsp;Multiplier:</p>
+                                            <p className="text-xl">{gameInfo.threeMatchMultiplier}x</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        {isConnected && (
+                            <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm text-center  font-semibold">
+                                <p className="mb-2">Balance:</p>
+                                <p> {parseFloat(balance).toFixed(4)} ETH</p>
+                            </div>
+                        )}
+
+                        {isConnected && (
+
+                            <div className="text-center mb-4">
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {playerStats && (
+                                        <>
+                                            <div className="bg-blue-50 p-2 rounded flex-1 min-w-[100px] text-center">
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    <p>Total Bet:</p>
+                                                    <p className="font-semibold">{parseFloat(playerStats.totalBet).toFixed(4)} ETH</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-blue-50 p-2 rounded flex-1 min-w-[100px] text-center">
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    <p>Total Won:</p>
+                                                    <p className="text-green-500 font-semibold">{parseFloat(playerStats.totalWon).toFixed(4)} ETH</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-blue-50 p-2 rounded flex-1 min-w-[100px] text-center">
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    <p>Net Result:</p>
+                                                    <p className="text-yellow-400 font-semibold">{parseFloat(playerStats.netResult).toFixed(4)} ETH</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+
+                        {gameInfo && (
+                            <div className="mb-4 p-3 bg-blue-50 rounded-lg text-center font-semibold">
+                                <p>{gameInfo.betAmount} ETH</p>
+                                <p>Bet Amount: </p>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 <div className="flex justify-center mb-6">
-                    {!isConnected ? (
+                    {!isConnected &&(
                         <button
                             onClick={connectWallet}
                             className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
@@ -595,29 +691,13 @@ function Web3App() {
                             <WalletIcon size={20}/>
                             Connect Wallet
                         </button>
-                    ) : (
-                        <div className="text-center">
-                            <p className="mb-2">
-                                Connected: {account.slice(0, 6)}...{account.slice(-4)}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2">
-                                Balance: {parseFloat(balance).toFixed(4)} ETH
-                            </p>
-                            {playerStats && (
-                                <div className="text-sm text-gray-600 mb-2">
-                                    <p>Total Bet: {parseFloat(playerStats.totalBet).toFixed(4)} ETH</p>
-                                    <p>Total Won: {parseFloat(playerStats.totalWon).toFixed(4)} ETH</p>
-                                    <p>Net Result: {parseFloat(playerStats.netResult).toFixed(4)} ETH</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
                 </div>
 
                 {isConnected && (
                     <div className="space-y-4">
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <h2 className="text-lg font-semibold mb-2">Play</h2>
+                            <h2 className="text-lg font-semibold mb-2 text-center">Play</h2>
                             <button
                                 onClick={handleSpin}
                                 disabled={isSpinning}
