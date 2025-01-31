@@ -232,6 +232,32 @@ const CONTRACT_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "depositBankroll",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "playerBankroll",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
     }
 ];
 
@@ -303,6 +329,7 @@ function Web3App() {
         setBalanceType(balanceType === 'Bank' ? 'Bankroll' : 'Bank');
     }
 
+  
     const updateBalance = async () => {
         if (!window.ethereum || !account) return;
 
@@ -315,9 +342,9 @@ function Web3App() {
             }
             else if (balanceType === 'Bankroll') {
                 console.log("balance type: Bankroll");
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const balance = await contract.getBalance();
-                setBalance(ethers.utils.formatEther(balance));
+                const bankrollBalance = await contract.playerBankroll(account);
+                console.log("Bankroll balance:", bankrollBalance.toString());
+                setBalance(ethers.utils.formatEther(bankrollBalance));
             }
 
         } catch (error) {
@@ -399,6 +426,35 @@ function Web3App() {
         }
     };
 
+    const depositBankroll = async (amount) => {
+        if (!contract) {
+            updateStatus("Contract not initialized");
+            return;
+        }
+
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+
+            const tx = await contract.depositBankroll({
+                value: ethers.utils.parseEther(amount),
+                from: account
+            });
+
+            console.log("Deposit transaction:", tx);
+            updateStatus("Deposit transaction sent");
+
+            const receipt = await tx.wait(1);
+            console.log("Deposit receipt:", receipt);
+            updateStatus("Deposit successful");
+
+            await updateBalance();
+        } catch (error) {
+            console.error("Deposit error:", error);
+            updateStatus(`Deposit error: ${error.message}`);
+        }
+    }
+
     const handleSpin = async () => {
         if (!contract) {
             updateStatus("Contract not initialized");
@@ -414,8 +470,10 @@ function Web3App() {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
 
-            // Vérifier le solde
-            const currentBalance = await provider.getBalance(account);
+            const currentBalance = balanceType === 'Bank'
+                ? await provider.getBalance(account)
+                : await contract.playerBankroll(account);
+
             const betAmountWei = ethers.utils.parseEther(betAmount);
             // Fetch the current nonce
             const nonce = await provider.getTransactionCount(account, 'latest');
@@ -459,6 +517,9 @@ function Web3App() {
                 errorMessage = "Insufficient funds for transaction";
             } else if (error.message.includes("user rejected")) {
                 errorMessage = "Transaction rejected by user";
+            }else if(error.message.includes("Insufficient balance for bet")){
+                errorMessage = "Insufficient balance for bet";
+
             } else if (error.data) {
                 try {
                     const reason = error.data.message || error.message;
@@ -546,8 +607,10 @@ function Web3App() {
                 setIsConnected(false);
                 setAccount('');
                 setContract(null);
+
             } else {
                 setAccount(accounts[0]);
+                setBalanceType('Bank');
                 initializeContract();
             }
         };
@@ -657,8 +720,8 @@ function Web3App() {
                                 <div className="flex-grow p-3 bg-gray-100 rounded-lg text-sm text-center font-semibold">
                                     <div className="flex">
                                         <div className="flex-grow">
-                                            <p className="mb-2">Balance:</p>
-                                            {/*add bankroll amount*/}
+                                            <p className="mb-2">{balanceType} Balance:</p>
+                                            {/*add bankroll balance*/}
                                             <p>{parseFloat(balance).toFixed(4)} ETH</p>
                                         </div>
                                         <div className="flex items-center">
@@ -671,7 +734,7 @@ function Web3App() {
                                 </div>
                                 {balanceType === 'Bankroll' && (
                                     <div className="ml-4 flex flex-col">
-                                        <button
+                                        <button onClick={() => depositBankroll("0.002")}
                                             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
                                             Deposit in BankRoll
                                         </button>
