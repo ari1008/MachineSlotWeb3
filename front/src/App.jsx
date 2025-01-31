@@ -242,7 +242,10 @@ function Web3App() {
     const [betAmount, setBetAmount] = useState('0');
     const [isSpinning, setIsSpinning] = useState(false);
     const [status, setStatus] = useState('');
+
     const [balance, setBalance] = useState('0');
+    const [balanceType, setBalanceType] = useState('Bank');
+
     const [playerStats, setPlayerStats] = useState(null);
     const [lastResult, setLastResult] = useState(null);
     const [gameInfo, setGameInfo] = useState(null);
@@ -296,13 +299,27 @@ function Web3App() {
         }
     };
 
+    const toggleBalanceType = () => {
+        setBalanceType(balanceType === 'Bank' ? 'Bankroll' : 'Bank');
+    }
+
     const updateBalance = async () => {
         if (!window.ethereum || !account) return;
 
         try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const balance = await provider.getBalance(account);
-            setBalance(ethers.utils.formatEther(balance));
+            if(balanceType === 'Bank') {
+                console.log("balance type: Bank");
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const balance = await provider.getBalance(account);
+                setBalance(ethers.utils.formatEther(balance));
+            }
+            else if (balanceType === 'Bankroll') {
+                console.log("balance type: Bankroll");
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const balance = await contract.getBalance();
+                setBalance(ethers.utils.formatEther(balance));
+            }
+
         } catch (error) {
             console.error("Error updating balance:", error);
         }
@@ -641,25 +658,28 @@ function Web3App() {
                                     <div className="flex">
                                         <div className="flex-grow">
                                             <p className="mb-2">Balance:</p>
+                                            {/*add bankroll amount*/}
                                             <p>{parseFloat(balance).toFixed(4)} ETH</p>
                                         </div>
                                         <div className="flex items-center">
-                                            <button
-                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
-                                                Balance Type
+                                            <button onClick={toggleBalanceType}
+                                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
+                                                Switch to <br/>{balanceType === 'Bank' ? 'Bankroll' : 'Bank'}
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="ml-4 flex flex-col">
-                                    <button
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
-                                        Deposit in BankRoll
-                                    </button>
-                                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
-                                        Withdraw from BankRoll
-                                    </button>
-                                </div>
+                                {balanceType === 'Bankroll' && (
+                                    <div className="ml-4 flex flex-col">
+                                        <button
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
+                                            Deposit in BankRoll
+                                        </button>
+                                        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                                            Withdraw from BankRoll
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
