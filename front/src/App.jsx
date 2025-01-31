@@ -636,9 +636,30 @@ function Web3App() {
                             </div>
                         </div>
                         {isConnected && (
-                            <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm text-center  font-semibold">
-                                <p className="mb-2">Balance:</p>
-                                <p> {parseFloat(balance).toFixed(4)} ETH</p>
+                            <div className="flex justify-between items-center mb-4">
+                                <div className="flex-grow p-3 bg-gray-100 rounded-lg text-sm text-center font-semibold">
+                                    <div className="flex">
+                                        <div className="flex-grow">
+                                            <p className="mb-2">Balance:</p>
+                                            <p>{parseFloat(balance).toFixed(4)} ETH</p>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <button
+                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
+                                                Balance Type
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="ml-4 flex flex-col">
+                                    <button
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
+                                        Deposit in BankRoll
+                                    </button>
+                                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                                        Withdraw from BankRoll
+                                    </button>
+                                </div>
                             </div>
                         )}
 
