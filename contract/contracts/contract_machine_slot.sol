@@ -115,21 +115,24 @@ contract SlotMachine {
         playerBankroll[msg.sender] += msg.value;
     }
 
-    function spin() public payable {
-        require(msg.value == betAmount, "Incorrect bet amount");
-        require(address(this).balance >= msg.value * threeMatchMultiplier, "Not enough funds in contract");
 
-        totalBets[msg.sender] += msg.value;
+    function spin(uint256 betSize) public {
+        require(betSize >= betAmount, "Bet too small");
+        require(betSize <= betAmount * 10, "Bet too large");
+        require(playerBankroll[msg.sender] >= betSize, "Insufficient bankroll");
+
+        playerBankroll[msg.sender] -= betSize;
+        totalBets[msg.sender] += betSize;
 
         uint8[3] memory result = generateRandomResult();
-        uint256 winAmount = calculateWin(msg.value, result);
+        uint256 winAmount = calculateWin(betSize, result);
         string memory outcome;
 
         address referrer = referrers[msg.sender];
         if (referrer != address(0)) {
-            uint256 referralAmount = (msg.value * referralBonus) / 100;
+            uint256 referralAmount = (betSize * referralBonus) / 100;
             referralEarnings[referrer] += referralAmount;
-            payable(referrer).transfer(referralAmount);
+            playerBankroll[referrer] += referralAmount;
             emit ReferralBonus(referrer, msg.sender, referralAmount);
         }
 
@@ -142,11 +145,11 @@ contract SlotMachine {
         }
 
         if (winAmount > 0) {
-            payable(msg.sender).transfer(winAmount);
+            playerBankroll[msg.sender] += winAmount;
             totalWinnings[msg.sender] += winAmount;
         }
 
-        emit Spin(msg.sender, msg.value, result, winAmount, outcome);
+        emit Spin(msg.sender, betSize, result, winAmount, outcome);
     }
 
     function calculateDynamicBetAmount(address player) public view returns (uint256) {

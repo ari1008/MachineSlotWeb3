@@ -6,11 +6,11 @@ async function demonstrateSlotMachine() {
     console.log("🎰 DÉMONSTRATION DE LA MACHINE À SOUS 🎰\n");
 
     try {
-        const accounts = await hre.viem.getWalletClients()
+        const accounts = await hre.viem.getWalletClients();
         const [owner, player, referrer] = accounts;
 
-
         const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS);
+
         console.log("📊 INFORMATIONS DE BASE");
         const betAmount = await slot.read.betAmount();
         const balance = await slot.read.getBalance();
@@ -20,48 +20,61 @@ async function demonstrateSlotMachine() {
         console.log(`Solde du contrat: ${balance} ETH`);
         console.log(`Propriétaire: ${contractOwner}\n`);
 
-        console.log("👥 DÉMONSTRATION DU SYSTÈME DE PARRAINAGE");
-
+        console.log("👥 TEST DU SYSTÈME DE PARRAINAGE");
         const referralTx = await slot.write.registerReferral(
             [referrer.account.address],
             {account: player.account.address}
         );
-        console.log(`Parrain enregistré: ${referrer.account.address}`);
-        console.log(`Parrain enregistré réussi  ${referralTx}`)
+        console.log(`Transaction de parrainage: ${referralTx}`);
 
         const referralCount = await slot.read.getReferralCount([referrer.account.address]);
         console.log(`Nombre de filleuls: ${referralCount}\n`);
 
-        console.log("💰 DÉMONSTRATION DE LA GESTION DE BANKROLL");
-        const depositAmount = 1000000000000000000n; // 1 ETH
+
+        console.log("💰 TEST DE LA BANKROLL");
+        const depositAmount = 10000000000000000000n; // 10 ETH
         const depositTx = await slot.write.depositBankroll({
             value: depositAmount,
             account: player.account.address
         });
-        console.log(`Dépôt de 1 ETH effectué`);
-        console.log(`DepositTx ${depositTx}`)
-        const suggestedBet = await slot.read.calculateDynamicBetAmount([player.account.address]);
-        console.log(`Mise suggérée: ${suggestedBet} ETH\n`);
+        console.log(`Dépôt effectué: ${depositTx}`);
 
-        console.log("🎮 DÉMONSTRATION DU JEU");
-        for (let i = 0; i < 3; i++) {
-            console.log(`\nTour ${i + 1}:`);
-            const spinTx = await slot.write.spin({
-                value: betAmount,
-                account: player.account.address
-            });
+        const playerBankroll = await slot.read.playerBankroll([player.account.address]);
+        console.log(`Bankroll du joueur: ${playerBankroll} ETH\n`);
 
-            console.log(`Transaction de spin: ${spinTx}`);
+        console.log("🎮 TEST DES SPINS");
+        const spinAmounts = [
+            1000000000000000n,  // 0.001 ETH
+            2000000000000000n,  // 0.002 ETH
+            5000000000000000n   // 0.005 ETH
+        ];
+
+        for (let i = 0; i < spinAmounts.length; i++) {
+            console.log(`\nSpin ${i + 1} - Mise: ${spinAmounts[i]} ETH`);
+
+            const bankrollBefore = await slot.read.playerBankroll([player.account.address]);
+            console.log(`Bankroll avant: ${bankrollBefore} ETH`);
+
+            const spinTx = await slot.write.spin(
+                [spinAmounts[i]],
+                {account: player.account.address}
+            );
+            console.log(`Transaction: ${spinTx}`);
+
+            const bankrollAfter = await slot.read.playerBankroll([player.account.address]);
+            console.log(`Bankroll après: ${bankrollAfter} ETH`);
+
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        console.log("\n📈 STATISTIQUES DU JOUEUR");
+
+        console.log("\n📊 STATISTIQUES FINALES");
         const stats = await slot.read.getPlayerStats([player.account.address]);
         console.log(`Total misé: ${stats[0]} ETH`);
         console.log(`Total gagné: ${stats[1]} ETH`);
-        console.log(`Résultat net: ${stats[2]} ETH\n`);
+        console.log(`Résultat net: ${stats[2]} ETH`);
 
-
-        console.log("💎 GAINS DU PARRAIN");
         const referralEarnings = await slot.read.referralEarnings([referrer.account.address]);
         console.log(`Gains du parrain: ${referralEarnings} ETH\n`);
 
@@ -70,123 +83,92 @@ async function demonstrateSlotMachine() {
     }
 }
 
-async function demonstrateReferralSystem() {
+async function testContractOwnership() {
     try {
-        const accounts = await hre.viem.getWalletClients()
-        const player = accounts[2]
-        const newReferrer = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
-
+        const accounts = await hre.viem.getWalletClients();
+        const [owner, nonOwner] = accounts;
         const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS);
 
-        console.log("👥 SYSTÈME DE PARRAINAGE\n")
+        console.log("🔐 TEST DES PERMISSIONS");
 
-        console.log("Enregistrement du parrain")
-        const referralTx = await slot.write.registerReferral(
-            [newReferrer],
-            {account: player.account.address}
-        )
-        console.log(`Parrain enregistré: ${newReferrer}`)
-        console.log(`Transaction: ${referralTx}`)
+        console.log("\nTest de setBetAmount:");
+        const newBetAmount = 2000000000000000n; // 0.002 ETH
 
-        const referralCount = await slot.read.getReferralCount([newReferrer])
-        console.log(`Nombre de filleuls: ${referralCount}`)
-
-        console.log("\nDémonstration des gains de parrainage")
-        const betAmount = await slot.read.betAmount()
-
-        for (let i = 0; i < 3; i++) {
-            console.log(`\nPartie ${i + 1}:`)
-            const spinTx = await slot.write.spin({
-                value: betAmount,
-                account: player.account.address
-            })
-            console.log(`Transaction: ${spinTx}`)
-        }
-
-        console.log("\nVérification des gains")
-        const referralEarnings = await slot.read.referralEarnings([newReferrer])
-        console.log(`Gains du parrain: ${referralEarnings} ETH`)
-
-    } catch (error) {
-        console.error("Erreur:", error)
-    }
-}
-
-
-async function demonstrateBankroll() {
-    try {
-        const accounts = await hre.viem.getWalletClients()
-        const [owner, player1, player2] = accounts;
-
-        const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS);
-
-        console.log("💰 DÉMONSTRATION DU SYSTÈME DE BANKROLL\n");
-
-        const initialContractBalance = await slot.read.getBalance();
-        console.log("1️⃣ ÉTAT INITIAL");
-        console.log(`Balance du contrat: ${initialContractBalance} ETH`);
-
-        const initialPlayerBankroll = await slot.read.playerBankroll([player1.account.address]);
-        console.log(`Bankroll initiale du joueur: ${initialPlayerBankroll} ETH\n`);
-
-        console.log("2️⃣ DÉPÔT DANS LA BANKROLL");
-        const depositAmount = 1000000000000000000n; // 1 ETH
         try {
-            const depositTx = await slot.write.depositBankroll({
-                value: depositAmount,
-                account: player1.account.address
-            });
-            console.log(`Transaction de dépôt effectuée: ${depositTx}`);
-
-            const newPlayerBankroll = await slot.read.playerBankroll([player1.account.address]);
-            console.log(`Nouvelle bankroll du joueur: ${newPlayerBankroll} ETH\n`);
+            const tx = await slot.write.setBetAmount(
+                [newBetAmount],
+                {account: owner.account.address}
+            );
+            console.log(`✅ Propriétaire peut modifier la mise: ${tx}`);
         } catch (error) {
-            console.error("Erreur lors du dépôt:", error.message);
+            console.log("❌ Erreur lors de la modification de la mise par le propriétaire");
         }
 
-        console.log("3️⃣ CALCUL DE LA MISE SUGGÉRÉE");
-        const suggestedBet = await slot.read.calculateDynamicBetAmount([player1.account.address]);
-        console.log(`Mise suggérée pour le joueur: ${suggestedBet} ETH\n`);
-
-        console.log("4️⃣ IMPACT DU JEU SUR LA BANKROLL");
-        const betAmount = await slot.read.betAmount();
-
-        for (let i = 0; i < 3; i++) {
-            console.log(`\nPartie ${i + 1}:`);
-            const bankrollBefore = await slot.read.playerBankroll([player1.account.address]);
-            console.log(`Bankroll avant la partie: ${bankrollBefore} ETH`);
-
-            const spinTx = await slot.write.spin({
-                value: betAmount,
-                account: player1.account.address
-            });
-            console.log(`Transaction de spin: ${spinTx}`);
-
-            const bankrollAfter = await slot.read.playerBankroll([player1.account.address]);
-            console.log(`Bankroll après la partie: ${bankrollAfter} ETH`);
+        try {
+            const tx = await slot.write.setBetAmount(
+                [newBetAmount],
+                {account: nonOwner.account.address}
+            );
+            console.log("❌ Non-propriétaire ne devrait pas pouvoir modifier la mise");
+        } catch (error) {
+            console.log("✅ Non-propriétaire ne peut pas modifier la mise (attendu)");
         }
-
-
-        console.log("\n5️⃣ STATISTIQUES DU JOUEUR");
-        const stats = await slot.read.getPlayerStats([player1.account.address]);
-        console.log(`Total misé: ${stats[0]} ETH`);
-        console.log(`Total gagné: ${stats[1]} ETH`);
-        console.log(`Résultat net: ${stats[2]} ETH`);
-
-        const finalContractBalance = await slot.read.getBalance();
-        console.log("\n6️⃣ ÉTAT FINAL");
-        console.log(`Balance finale du contrat: ${finalContractBalance} ETH`);
 
     } catch (error) {
         console.error("❌ Erreur:", error);
     }
 }
 
+async function testBankrollSystem() {
+    try {
+        const accounts = await hre.viem.getWalletClients();
+        const [owner, player1, player2] = accounts;
+        const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS);
+
+        console.log("\n💰 TEST APPROFONDI DU SYSTÈME DE BANKROLL");
+
+
+        const depositAmount1 = 5000000000000000000n; // 5 ETH
+        const depositAmount2 = 3000000000000000000n; // 3 ETH
+
+        console.log("\nTest des dépôts:");
+        const deposit1 = await slot.write.depositBankroll({
+            value: depositAmount1,
+            account: player1.account.address
+        });
+        console.log(`Dépôt joueur 1: ${deposit1}`);
+
+        const deposit2 = await slot.write.depositBankroll({
+            value: depositAmount2,
+            account: player2.account.address
+        });
+        console.log(`Dépôt joueur 2: ${deposit2}`);
+
+
+        const bankroll1 = await slot.read.playerBankroll([player1.account.address]);
+        const bankroll2 = await slot.read.playerBankroll([player2.account.address]);
+        console.log(`\nBankroll joueur 1: ${bankroll1} ETH`);
+        console.log(`Bankroll joueur 2: ${bankroll2} ETH`);
+
+
+        const suggested1 = await slot.read.calculateDynamicBetAmount([player1.account.address]);
+        const suggested2 = await slot.read.calculateDynamicBetAmount([player2.account.address]);
+        console.log(`\nMise suggérée joueur 1: ${suggested1} ETH`);
+        console.log(`Mise suggérée joueur 2: ${suggested2} ETH`);
+
+    } catch (error) {
+        console.error("❌ Erreur:", error);
+    }
+}
 
 async function main() {
+    console.log("🎲 DÉBUT DES TESTS 🎲\n");
+
     await demonstrateSlotMachine();
-    await demonstrateReferralSystem();
-    await demonstrateBankroll()
+    await testContractOwnership();
+    await testBankrollSystem();
+
+    console.log("\n🎲 FIN DES TESTS 🎲");
 }
 
 main()
