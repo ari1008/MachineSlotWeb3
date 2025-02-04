@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import {WalletIcon} from 'lucide-react';
-import {ethers} from 'ethers';
+import React, { useEffect, useState } from 'react';
+import { WalletIcon } from 'lucide-react';
+import { ethers } from 'ethers';
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 console.log("Loading contract at address:", CONTRACT_ADDRESS);
@@ -10,6 +10,31 @@ const CONTRACT_ABI = [
         "inputs": [],
         "stateMutability": "payable",
         "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "referrer",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "player",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "bonus",
+                "type": "uint256"
+            }
+        ],
+        "name": "ReferralBonus",
+        "type": "event"
     },
     {
         "anonymous": false,
@@ -69,6 +94,32 @@ const CONTRACT_ABI = [
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "player",
+                "type": "address"
+            }
+        ],
+        "name": "calculateDynamicBetAmount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "depositBankroll",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "getBalance",
         "outputs": [
@@ -111,6 +162,25 @@ const CONTRACT_ABI = [
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "referrer",
+                "type": "address"
+            }
+        ],
+        "name": "getReferralCount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "numberOfSymbols",
         "outputs": [
@@ -139,6 +209,113 @@ const CONTRACT_ABI = [
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "playerBankroll",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "referralBonus",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "referralEarnings",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "referrals",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "referrers",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "referrer",
+                "type": "address"
+            }
+        ],
+        "name": "registerReferral",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
                 "name": "_betAmount",
                 "type": "uint256"
@@ -150,10 +327,16 @@ const CONTRACT_ABI = [
         "type": "function"
     },
     {
-        "inputs": [],
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "betSize",
+                "type": "uint256"
+            }
+        ],
         "name": "spin",
         "outputs": [],
-        "stateMutability": "payable",
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -232,32 +415,6 @@ const CONTRACT_ABI = [
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "depositBankroll",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "playerBankroll",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     }
 ];
 
@@ -266,17 +423,15 @@ function Web3App() {
     const [account, setAccount] = useState('');
     const [contract, setContract] = useState(null);
     const [betAmount, setBetAmount] = useState('0');
+    const [dynamicBet, setDynamicBet] = useState('0');
     const [isSpinning, setIsSpinning] = useState(false);
     const [status, setStatus] = useState('');
-
     const [balance, setBalance] = useState('0');
     const [balanceType, setBalanceType] = useState('Bank');
-
     const [playerStats, setPlayerStats] = useState(null);
     const [lastResult, setLastResult] = useState(null);
     const [gameInfo, setGameInfo] = useState(null);
     const [networkError, setNetworkError] = useState('');
-
 
     const updateStatus = (message) => {
         console.log("Status Update:", message);
@@ -285,7 +440,6 @@ function Web3App() {
 
     const verifyContractFunctions = async (contractInstance) => {
         try {
-            // Lire le montant de mise du contrat
             const betAmountFromContract = await contractInstance.betAmount();
             console.log("Bet amount from contract:", betAmountFromContract.toString());
             setBetAmount(ethers.utils.formatEther(betAmountFromContract));
@@ -303,6 +457,8 @@ function Web3App() {
                 threeMatchMultiplier: threeMatchMultiplier.toString()
             });
 
+            // Met à jour la mise dynamique au chargement du contrat
+            updateDynamicBet(contractInstance);
             return true;
         } catch (error) {
             console.error("Contract verification failed:", error);
@@ -310,9 +466,19 @@ function Web3App() {
         }
     };
 
+    // Met à jour la mise dynamique en appelant calculateDynamicBetAmount sur le contrat
+    const updateDynamicBet = async (contractInstance = contract) => {
+        if (!contractInstance || !account) return;
+        try {
+            const suggested = await contractInstance.calculateDynamicBetAmount(account);
+            setDynamicBet(ethers.utils.formatEther(suggested));
+        } catch (error) {
+            console.error("Error fetching dynamic bet amount:", error);
+        }
+    };
+
     const updatePlayerStats = async () => {
         if (!contract || !account) return;
-
         try {
             const stats = await contract.getPlayerStats(account);
             setPlayerStats({
@@ -327,26 +493,22 @@ function Web3App() {
 
     const toggleBalanceType = () => {
         setBalanceType(balanceType === 'Bank' ? 'Bankroll' : 'Bank');
-    }
+    };
 
-  
     const updateBalance = async () => {
         if (!window.ethereum || !account) return;
-
         try {
-            if(balanceType === 'Bank') {
+            if (balanceType === 'Bank') {
                 console.log("balance type: Bank");
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const balance = await provider.getBalance(account);
                 setBalance(ethers.utils.formatEther(balance));
-            }
-            else if (balanceType === 'Bankroll') {
+            } else if (balanceType === 'Bankroll') {
                 console.log("balance type: Bankroll");
                 const bankrollBalance = await contract.playerBankroll(account);
                 console.log("Bankroll balance:", bankrollBalance.toString());
                 setBalance(ethers.utils.formatEther(bankrollBalance));
             }
-
         } catch (error) {
             console.error("Error updating balance:", error);
         }
@@ -355,11 +517,10 @@ function Web3App() {
     const initializeContract = async () => {
         setNetworkError('');
         try {
-            const {ethereum} = window;
+            const { ethereum } = window;
             if (!ethereum) {
                 throw new Error("MetaMask not installed");
             }
-
             const provider = new ethers.providers.Web3Provider(ethereum);
             const signer = provider.getSigner();
 
@@ -373,9 +534,9 @@ function Web3App() {
             if (!isValid) {
                 throw new Error("Contract verification failed");
             }
-
             setContract(contractInstance);
 
+            // Écoute de l'événement Spin
             contractInstance.on("Spin", (player, bet, result, winAmount, outcome) => {
                 setLastResult({
                     player,
@@ -386,12 +547,12 @@ function Web3App() {
                 });
                 updatePlayerStats();
                 updateBalance();
+                updateDynamicBet(contractInstance);
             });
 
             await updatePlayerStats();
             await updateBalance();
             updateStatus("Contract initialized successfully");
-
         } catch (error) {
             console.error("Contract initialization error:", error);
             setNetworkError(error.message);
@@ -405,16 +566,12 @@ function Web3App() {
                 alert("Please install MetaMask!");
                 return;
             }
-
-            // Vérifier le réseau
             const networkOk = await checkNetwork();
             if (!networkOk) {
                 throw new Error("Please connect to the correct network");
             }
-
             const provider = new ethers.providers.Web3Provider(ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
-
             if (accounts.length > 0) {
                 setAccount(accounts[0]);
                 setIsConnected(true);
@@ -431,139 +588,99 @@ function Web3App() {
             updateStatus("Contract not initialized");
             return;
         }
-
         try {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const nonce = await provider.getTransactionCount(account, 'latest');
-            const signer = provider.getSigner();
-
             const tx = await contract.depositBankroll({
                 value: ethers.utils.parseEther(amount),
                 from: account,
                 nonce: nonce
             });
-
             console.log("Deposit transaction:", tx);
             updateStatus("Deposit transaction sent");
-
             const receipt = await tx.wait(1);
             console.log("Deposit receipt:", receipt);
             updateStatus("Deposit successful");
-
             await updateBalance();
+            updateDynamicBet();
         } catch (error) {
             console.error("Deposit error:", error);
             updateStatus(`Deposit error: ${error.message}`);
         }
-    }
+    };
 
+    // Utilisation de la mise dynamique pour le spin
     const handleSpin = async () => {
         if (!contract) {
             updateStatus("Contract not initialized");
             return;
         }
         setLastResult(null);
-
         try {
             setIsSpinning(true);
-
             updateStatus("Preparing spin...");
 
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
+            // Ici, on utilise la mise dynamique. Vous pouvez choisir de remplacer betAmount
+            // ou d'ajouter un bouton distinct pour choisir entre la mise de base ou la mise dynamique.
+            const betAmountWei = ethers.utils.parseEther(dynamicBet);
 
-            const currentBalance = balanceType === 'Bank'
-                ? await provider.getBalance(account)
-                : await contract.playerBankroll(account);
-
-            const betAmountWei = ethers.utils.parseEther(betAmount);
-            // Fetch the current nonce
-            const nonce = await provider.getTransactionCount(account, 'latest');
-
-            if (currentBalance.lt(betAmountWei)) {
-                throw new Error("Insufficient balance for bet");
+            // Vérifier que le joueur dispose d'une bankroll suffisante
+            const bankroll = await contract.playerBankroll(account);
+            if (bankroll.lt(betAmountWei)) {
+                throw new Error("Insufficient bankroll for bet");
             }
 
-            // Paramètres de transaction adaptés pour Hardhat
-            const txParams = {
-                from: account,
-                value: betAmountWei,
-                gasLimit: ethers.utils.hexlify(1000000), // Gas limit plus élevé pour Hardhat
-                nonce: nonce
-            };
-
-            console.log("Sending transaction with params:", txParams);
-
-            const tx = await contract.spin(txParams);
-            console.log("Transaction hash:", tx.hash);
+            // Appeler spin en passant le montant du pari
+            const tx = await contract.spin(betAmountWei, {
+                gasLimit: 300000
+            });
+            console.log("Transaction details:", {
+                hash: tx.hash,
+                betAmount: betAmountWei.toString()
+            });
             updateStatus(`Transaction sent. Hash: ${tx.hash}`);
-
             updateStatus("Waiting for confirmation...");
             const receipt = await tx.wait(1);
-
             if (receipt.status === 1) {
                 console.log("Transaction successful:", receipt);
                 updateStatus("Spin successful!");
                 await updatePlayerStats();
                 await updateBalance();
+                updateDynamicBet();
             } else {
                 throw new Error("Transaction failed");
             }
-
         } catch (error) {
             console.error("Spin error:", error);
-
             let errorMessage = "An error occurred while spinning";
-
-            if (error.message.includes("insufficient funds")) {
-                errorMessage = "Insufficient funds for transaction";
-            } else if (error.message.includes("user rejected")) {
-                errorMessage = "Transaction rejected by user";
-            }else if(error.message.includes("Insufficient balance for bet")){
-                errorMessage = "Insufficient balance for bet";
-
-            } else if (error.data) {
-                try {
-                    const reason = error.data.message || error.message;
-                    errorMessage = `Contract error: ${reason}`;
-                } catch (e) {
-                    errorMessage = error.message;
-                }
+            if (error.message.includes("Insufficient bankroll")) {
+                errorMessage = "Insufficient bankroll for bet";
+            } else if (error.message.includes("Bet too small")) {
+                errorMessage = "Bet amount is too small";
+            } else if (error.message.includes("Bet too large")) {
+                errorMessage = "Bet amount is too large";
             }
-
             updateStatus(errorMessage);
-            console.log("Detailed error:", {
-                message: error.message,
-                data: error.data,
-                transaction: error.transaction
-            });
-
         } finally {
             setIsSpinning(false);
         }
     };
 
-
     const checkNetwork = async () => {
         if (!window.ethereum) return false;
-
         try {
-            // Récupérer l'ID du réseau actuel
             const chainId = await window.ethereum.request({ method: 'eth_chainId' });
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const network = await provider.getNetwork();
-
             console.log("Current network:", {
                 chainId,
                 name: network.name,
                 networkId: network.chainId
             });
-
-            // Vérifier si nous sommes sur Hardhat (chainId: 31337)
-            const correctChainId = '0x7A69'; // Hardhat
+            // Pour Hardhat, utilisez: '0x7A69'
+            const correctChainId = '0x7A69';
             if (chainId !== correctChainId) {
                 try {
-                    // Essayer de changer de réseau
                     await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
                         params: [{ chainId: correctChainId }],
@@ -571,7 +688,6 @@ function Web3App() {
                     return true;
                 } catch (switchError) {
                     if (switchError.code === 4902) {
-                        // Réseau non ajouté, essayer de l'ajouter
                         try {
                             await window.ethereum.request({
                                 method: 'wallet_addEthereumChain',
@@ -609,7 +725,6 @@ function Web3App() {
                 setIsConnected(false);
                 setAccount('');
                 setContract(null);
-
             } else {
                 setAccount(accounts[0]);
                 setBalanceType('Bank');
@@ -674,7 +789,6 @@ function Web3App() {
                                     <div className="flex items-center gap-10">
                                         {(lastResult ? lastResult.result : [null, null, null]).map((number, index, array) => {
                                             const isMatching = array.filter((n) => n === number).length > 1;
-
                                             return (
                                                 <div
                                                     key={index}
@@ -695,7 +809,7 @@ function Web3App() {
                                         <>
                                             <p className="mt-4 text-lg">Outcome: {lastResult.outcome}</p>
                                             <p className="text-lg">
-                                                Amount Won: <span className="font-bold">{lastResult.winAmount} ETH </span>
+                                                Amount Won: <span className="font-bold">{lastResult.winAmount} ETH</span>
                                             </p>
                                         </>
                                     )}
@@ -712,6 +826,8 @@ function Web3App() {
                                             <p className="text-xl">{gameInfo.twoMatchMultiplier}x</p>
                                             <p className="font-semibold">Three&nbsp;Match&nbsp;Multiplier:</p>
                                             <p className="text-xl">{gameInfo.threeMatchMultiplier}x</p>
+                                            <p className="font-semibold mt-4">Suggested Bet:</p>
+                                            <p className="text-xl">{dynamicBet} ETH</p>
                                         </div>
                                     )}
                                 </div>
@@ -723,13 +839,12 @@ function Web3App() {
                                     <div className="flex">
                                         <div className="flex-grow">
                                             <p className="mb-2">{balanceType} Balance:</p>
-                                            {/*add bankroll balance*/}
                                             <p>{parseFloat(balance).toFixed(4)} ETH</p>
                                         </div>
                                         <div className="flex items-center">
                                             <button onClick={toggleBalanceType}
                                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
-                                                Switch to <br/>{balanceType === 'Bank' ? 'Bankroll' : 'Bank'}
+                                                Switch to <br />{balanceType === 'Bank' ? 'Bankroll' : 'Bank'}
                                             </button>
                                         </div>
                                     </div>
@@ -737,7 +852,7 @@ function Web3App() {
                                 {balanceType === 'Bankroll' && (
                                     <div className="ml-4 flex flex-col">
                                         <button onClick={() => depositBankroll("0.002")}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
+                                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
                                             Deposit in BankRoll
                                         </button>
                                         <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
@@ -749,7 +864,6 @@ function Web3App() {
                         )}
 
                         {isConnected && (
-
                             <div className="text-center mb-4">
                                 <div className="flex flex-wrap justify-center gap-2">
                                     {playerStats && (
@@ -778,26 +892,25 @@ function Web3App() {
                             </div>
                         )}
 
-
                         {gameInfo && (
                             <div className="mb-4 p-3 bg-blue-50 rounded-lg text-center font-semibold">
                                 <p>{gameInfo.betAmount} ETH</p>
-                                <p>Bet Amount: </p>
+                                <p>Bet Amount: (Base value)</p>
                             </div>
                         )}
                     </>
                 )}
 
                 <div className="flex justify-center mb-6">
-                    {!isConnected &&(
+                    {!isConnected && (
                         <button
                             onClick={connectWallet}
                             className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                         >
-                            <WalletIcon size={20}/>
+                            <WalletIcon size={20} />
                             Connect Wallet
                         </button>
-                        )}
+                    )}
                 </div>
 
                 {isConnected && (
@@ -808,15 +921,15 @@ function Web3App() {
                                 onClick={handleSpin}
                                 disabled={isSpinning}
                                 className={`
-                                    w-full px-4 py-2 rounded-lg transition-colors
-                                    ${isSpinning
+                  w-full px-4 py-2 rounded-lg transition-colors
+                  ${isSpinning
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-green-500 hover:bg-green-600'
                                 }
-                                    text-white
-                                `}
+                  text-white
+                `}
                             >
-                                {isSpinning ? "Spinning..." : "Spin!"}
+                                {isSpinning ? "Spinning..." : "Spin using Dynamic Bet"}
                             </button>
                         </div>
                     </div>
