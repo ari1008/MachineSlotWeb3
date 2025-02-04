@@ -432,6 +432,9 @@ function Web3App() {
     const [lastResult, setLastResult] = useState(null);
     const [gameInfo, setGameInfo] = useState(null);
     const [networkError, setNetworkError] = useState('');
+    const [referralAddress, setReferralAddress] = useState('');
+    const [referralCount, setReferralCount] = useState(null);
+    const [referralEarnings, setReferralEarnings] = useState('0');
 
     const updateStatus = (message) => {
         console.log("Status Update:", message);
@@ -457,8 +460,9 @@ function Web3App() {
                 threeMatchMultiplier: threeMatchMultiplier.toString()
             });
 
-            // Met à jour la mise dynamique au chargement du contrat
+            // Mise à jour de la mise dynamique et des données de referral
             updateDynamicBet(contractInstance);
+            updateReferralData(contractInstance);
             return true;
         } catch (error) {
             console.error("Contract verification failed:", error);
@@ -474,6 +478,19 @@ function Web3App() {
             setDynamicBet(ethers.utils.formatEther(suggested));
         } catch (error) {
             console.error("Error fetching dynamic bet amount:", error);
+        }
+    };
+
+    // Met à jour les données de referral (nombre de referrals et earnings)
+    const updateReferralData = async (contractInstance = contract) => {
+        if (!contractInstance || !account) return;
+        try {
+            const count = await contractInstance.getReferralCount(account);
+            setReferralCount(count.toString());
+            const earnings = await contractInstance.referralEarnings(account);
+            setReferralEarnings(ethers.utils.formatEther(earnings));
+        } catch (error) {
+            console.error("Error fetching referral data:", error);
         }
     };
 
@@ -620,8 +637,7 @@ function Web3App() {
             setIsSpinning(true);
             updateStatus("Preparing spin...");
 
-            // Ici, on utilise la mise dynamique. Vous pouvez choisir de remplacer betAmount
-            // ou d'ajouter un bouton distinct pour choisir entre la mise de base ou la mise dynamique.
+            // Ici, on utilise la mise dynamique
             const betAmountWei = ethers.utils.parseEther(dynamicBet);
 
             // Vérifier que le joueur dispose d'une bankroll suffisante
@@ -663,6 +679,30 @@ function Web3App() {
             updateStatus(errorMessage);
         } finally {
             setIsSpinning(false);
+        }
+    };
+
+    // Fonction pour enregistrer un referral
+    const registerReferral = async () => {
+        if (!contract) {
+            updateStatus("Contract not initialized");
+            return;
+        }
+        if (!referralAddress) {
+            updateStatus("Please enter a referral address");
+            return;
+        }
+        try {
+            updateStatus("Registering referral...");
+            const tx = await contract.registerReferral(referralAddress, { gasLimit: 300000 });
+            updateStatus(`Referral registration sent. Tx hash: ${tx.hash}`);
+            await tx.wait(1);
+            updateStatus("Referral registered successfully!");
+            // Mise à jour des données de referral après l'enregistrement
+            updateReferralData();
+        } catch (error) {
+            console.error("Referral error:", error);
+            updateStatus(`Referral error: ${error.message}`);
         }
     };
 
@@ -855,9 +895,6 @@ function Web3App() {
                                                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors mb-2 text-sm">
                                             Deposit in BankRoll
                                         </button>
-                                        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">
-                                            Withdraw from BankRoll
-                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -892,12 +929,34 @@ function Web3App() {
                             </div>
                         )}
 
-                        {gameInfo && (
-                            <div className="mb-4 p-3 bg-blue-50 rounded-lg text-center font-semibold">
-                                <p>{gameInfo.betAmount} ETH</p>
-                                <p>Bet Amount: (Base value)</p>
+                        <div className="mb-4 p-3 bg-blue-50 rounded-lg text-center font-semibold">
+                            <p>Base Bet Amount: {gameInfo && gameInfo.betAmount} ETH</p>
+                        </div>
+
+                        {/* Section Referral */}
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <h2 className="text-lg font-semibold mb-2 text-center">Referral</h2>
+                            <div className="mb-2">
+                                <input
+                                    type="text"
+                                    placeholder="Referral Address"
+                                    value={referralAddress}
+                                    onChange={(e) => setReferralAddress(e.target.value)}
+                                    className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                                />
                             </div>
-                        )}
+                            <button
+                                onClick={registerReferral}
+                                className="w-full px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white"
+                            >
+                                Register Referral
+                            </button>
+                            <div className="mt-4 text-center">
+                                <p className="font-semibold">My Referrals: {referralCount !== null ? referralCount : "Loading..."}</p>
+                                <p className="font-semibold">Referral Earnings: {referralEarnings} ETH</p>
+                            </div>
+                        </div>
+
                     </>
                 )}
 
