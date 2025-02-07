@@ -8,7 +8,8 @@ async function demonstrateSlotMachine() {
     try {
         const accounts = await hre.viem.getWalletClients();
         const [owner, player, referrer] = accounts;
-
+        console.log(owner)
+        exit()
         const slot = await hre.viem.getContractAt("SlotMachine", CONTRACT_ADDRESS);
 
         console.log("📊 INFORMATIONS DE BASE");
@@ -165,8 +166,8 @@ async function main() {
     console.log("🎲 DÉBUT DES TESTS 🎲\n");
 
     await demonstrateSlotMachine();
-    await testContractOwnership();
-    await testBankrollSystem();
+    //await testContractOwnership();
+    //await testBankrollSystem();
 
     console.log("\n🎲 FIN DES TESTS 🎲");
 }
